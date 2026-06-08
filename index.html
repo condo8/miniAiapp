@@ -3,33 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Modern Snake Game</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AI Image Classifier</title>
+    <!-- นำเข้าฟอนต์ Google Fonts เพื่อความสวยงาม -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --background: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text: #1F2937;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ส่วนแสดงผลรูปภาพ/กล้อง */
+        #preview-container {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            background: #E5E7EB;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 2px dashed #9CA3AF;
+        }
+
+        #webcam-container video, #image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #placeholder-text {
+            color: #6B7280;
+            font-size: 14px;
+        }
+
+        /* ปุ่มกดต่างๆ */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #10B981;
+        }
+        .btn-secondary:hover {
+            background-color: #059669;
+        }
+
+        /* แถบวิเคราะห์ผล (Prediction Bars) */
+        .result-container {
+            text-align: left;
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+
+        .label-row {
+            margin-bottom: 12px;
+        }
+
+        .label-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .bar-bg {
+            background: #E5E7EB;
+            border-radius: 9999px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            background: linear-gradient(90deg, #4F46E5, #818CF8);
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s ease-out;
+            border-radius: 9999px;
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="score-board">
-            <div class="score-box">SCORE: <span id="current-score">0</span></div>
-            <div class="score-box">HIGH SCORE: <span id="high-score">0</span></div>
-        </div>
 
-        <div class="canvas-wrapper">
-            <canvas id="gameCanvas" width="400" height="400"></canvas>
-            
-            <div id="start-screen" class="overlay">
-                <h1>SNAKE GAME</h1>
-                <p>ใช้ปุ่ม Arrow Keys หรือ W, A, S, D ในการบังคับ</p>
-                <button id="start-btn">START GAME</button>
-            </div>
-
-            <div id="game-over-screen" class="overlay hidden">
-                <h1 class="game-over-text">GAME OVER</h1>
-                <p>คะแนนที่คุณทำได้: <span id="final-score">0</span></p>
-                <button id="restart-btn">PLAY AGAIN</button>
-            </div>
-        </div>
+<div class="container">
+    <h2>AI Image Classifier</h2>
+    
+    <!-- ส่วน Preview กล้อง หรือ รูปภาพ -->
+    <div id="preview-container">
+        <span id="placeholder-text">ระบบยังไม่ได้เปิดใช้งานกล้องหรืออัพโหลดรูป</span>
+        <img id="image-preview" style="display:none;" src="#" alt="Preview">
+        <div id="webcam-container" style="display:none;"></div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- ปุ่มควบคุม -->
+    <div class="btn-group">
+        <button class="btn" onclick="initWebcam()">📷 เปิดกล้อง</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">📁 อัพโหลดรูป</button>
+        <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="previewAndPredict(event)">
+    </div>
+
+    <!-- แถบวิเคราะห์ผล -->
+    <div class="result-container">
+        <div class="result-title">📊 ผลการวิเคราะห์</div>
+        <div id="label-container">
+            <!-- แถบผลลัพธ์จะถูกสร้างขึ้นตรงนี้ด้วย JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- โหลดไลบรารี TensorFlow.js และ Teachable Machine -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script type="text/javascript">
+    // ⚠️ ใส่ URL โมเดล Teachable Machine ของคุณที่นี่ (ต้องมี / ปิดท้าย)
+    const URL = "https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/";
+
+    let model, webcam, labelContainer, maxPredictions;
+    let isWebcamActive = false;
+
+    // โหลดโมเดลเมื่อเปิดหน้าเว็บ
+    async function loadModel() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        
+        // สร้างแถบเปอร์เซ็นต์ตามจำนวน Class ในโมเดล
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < maxPredictions; i++) {
+            const row = document.createElement("div");
+            row.className = "label-row";
+            row.innerHTML = `
+                <div class="label-info">
+                    <span class="class-name">...</span>
+                    <span class="class-percent">0%</span>
+                </div>
+                <div class="bar-bg">
+                    <div class="bar-fill"></div>
+                </div>
+            `;
+            labelContainer.appendChild(row);
+        }
+    }
+
+    // ฟังก์ชันเปิดกล้อง Webcam
+    async function initWebcam() {
+        if(!model) await loadModel();
+        
+        // ปิดโหมดอัพโหลดรูป (ถ้าเปิดอยู่)
+        document.getElementById("image-preview").style.display = "none";
+        document.getElementById("placeholder-text").style.display = "none";
+        
+        const flip = true; 
+        webcam = new tmImage.Webcam(300, 300, flip); 
+        await webcam.setup(); 
+        await webcam.play();
+        
+        const webcamContainer = document.getElementById("webcam-container");
+        webcamContainer.innerHTML = "";
+        webcamContainer.appendChild(webcam.canvas);
+        webcamContainer.style.display = "block";
+        
+        isWebcamActive = true;
+        window.requestAnimationFrame(loopWebcam);
+    }
+
+    // ลูปวิดีโอเพื่ออัพเดทการทำนายจากกล้องแบบ Real-time
+    async function loopWebcam() {
+        if (!isWebcamActive) return;
+        webcam.update(); 
+        await predict(webcam.canvas);
+        window.requestAnimationFrame(loopWebcam);
+    }
+
+    // ฟังก์ชันสำหรับอัพโหลดรูปภาพและวิเคราะห์
+    async function previewAndPredict(event) {
+        if(!model) await loadModel();
+
+        // หยุดการทำงานของกล้อง (ถ้าเปิดอยู่)
+        if (isWebcamActive) {
+            isWebcamActive = false;
+            if(webcam) webcam.stop();
+            document.getElementById("webcam-container").style.display = "none";
+        }
+
+        const reader = new FileReader();
+        const image = document.getElementById("image-preview");
+        
+        reader.onload = function() {
+            image.src = reader.result;
+            image.style.display = "block";
+            document.getElementById("placeholder-text").style.display = "none";
+            
+            // รอให้รูปโหลดเสร็จแล้วทำการวิเคราะห์
+            image.onload = async function() {
+                await predict(image);
+            }
+        }
+        if(event.target.files[0]) {
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    }
+
+    // ฟังก์ชันคำนวณและแสดงแถบเปอร์เซ็นต์
+    async function predict(inputElement) {
+        const prediction = await model.predict(inputElement);
+        const rows = labelContainer.getElementsByClassName("label-row");
+
+        for (let i = 0; i < maxPredictions; i++) {
+            const className = prediction[i].className;
+            const probability = (prediction[i].probability * 100).toFixed(0);
+
+            // อัพเดทข้อความและอนิเมชันแถบสี
+            rows[i].querySelector(".class-name").innerText = className;
+            rows[i].querySelector(".class-percent").innerText = probability + "%";
+            rows[i].querySelector(".bar-fill").style.width = probability + "%";
+        }
+    }
+
+    // เรียกโหลดโครงสร้างแถบรอไว้ตอนเปิดเว็บ
+    window.onload = loadModel;
+</script>
+
 </body>
 </html>
